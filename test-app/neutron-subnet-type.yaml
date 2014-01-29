@@ -1,0 +1,21 @@
+# vim: ts=4 sw=4 et
+imports:
+    - 'cloudify.types'
+
+plugins:
+    # * "cloudify.plugins." is a must
+    # * Last part must match the folder name of the folder where tasks.py resides
+    cloudify.plugins.openstack_neutron_subnet_provisioner:
+        derived_from: 'cloudify.plugins.remote_plugin'
+        properties:
+            url: 'https://github.com/Fewbytes/cosmo-plugin-openstack-neutron-subnet-provisioner/archive/master.zip'
+
+types:
+    neutron_subnet:
+        derived_from: cloudify.types.base
+        properties:
+            - network_name
+            - subnet
+        interfaces:
+             cloudify.interfaces.lifecycle:
+                  - create: cloudify.plugins.openstack_neutron_subnet_provisioner.tasks.provision
