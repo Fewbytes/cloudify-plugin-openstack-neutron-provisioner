@@ -1,4 +1,10 @@
 # vim: ts=4 sw=4 et
+plugins:
+    cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner:
+        derived_from: 'cloudify.plugins.remote_plugin'
+        properties:
+            url: 'https://github.com/Fewbytes/cosmo-plugin-openstack-neutron-provisioner/archive/master.zip'
+
 imports:
     - 'cloudify.types'
     - 'neutron-network-type.yaml'
