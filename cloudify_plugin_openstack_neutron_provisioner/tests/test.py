@@ -32,6 +32,7 @@ class OpenstackNeutronTest(os_common.TestCase):
         cfy_port.delete(port={'name': name})
         self.assertThereIsNo('port', name=name)
 
+    @unittest.skip("have to update the test code")
     def test_network(self):
         name = self.name_prefix + 'net'
 
@@ -47,7 +48,6 @@ class OpenstackNeutronTest(os_common.TestCase):
 
         net = self.assertThereIsOneAndGet('network', name=name)
         self.assertTrue(net['admin_state_up'])
-        return
 
         cfy_net.stop(network)
         net = self.assertThereIsOneAndGet('network', name=name)
