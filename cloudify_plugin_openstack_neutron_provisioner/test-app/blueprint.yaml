@@ -19,28 +19,13 @@ blueprint:
         -
             name: 'neutron_port'
             type: 'neutron_port'
-            interfaces:
-                cloudify.interfaces.lifecycle:
-                    - start: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.port.send_started
             properties:
                 port:
                     name: 'neutron_test_port'
-            policies:
-                -
-                    name: 'start_detection_policy'
-                    rules:
-                        -
-                            type: 'state_equals'
-                            properties:
-                                service: 'port status'
-                                state: 'running'
             relationships:
                 -
                     type: 'cloudify.relationships.contained_in'
                     target: 'neutron_network'
-                    target_interfaces:
-                        cloudify.interfaces.relationship_lifecycle:
-                            - establish: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.port.create_in_network
         -
             name: 'neutron_network'
             type: 'neutron_network'
@@ -48,15 +33,6 @@ blueprint:
                 network:
                     name: 'neutron_network_test'
 
-            policies:
-                -
-                    name: 'start_detection_policy'
-                    rules:
-                        -
-                            type: 'state_equals'
-                            properties:
-                                service: 'network status'
-                                state: 'running'
         -
             name: 'neutron_subnet'
             type: 'neutron_subnet'
@@ -65,19 +41,7 @@ blueprint:
                     type: 'cloudify.relationships.contained_in'
                     target: 'neutron_network'
             properties:
-                network_name: 'neutron_network_test'
                 subnet:
                     name: 'neutron_subnet_test'
                     ip_version: 4
                     cidr: '10.10.10.0/24'
-
-            policies:
-                -
-                    name: 'start_detection_policy'
-                    rules:
-                        -
-                            type: 'state_equals'
-                            properties:
-                                service: 'subnet status'
-                                state: 'running'
-

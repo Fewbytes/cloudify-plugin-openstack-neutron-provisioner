@@ -7,3 +7,6 @@ types:
         derived_from: cloudify.types.base
         properties:
             - port
+        interfaces:
+            cloudify.interfaces.lifecycle:
+                - create: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.port.create
