@@ -8,24 +8,15 @@ plugins:
 imports:
     - 'cloudify.types'
     - 'neutron-network-type.yaml'
-    - 'neutron-subnet-type.yaml'
     - 'neutron-port-type.yaml'
+    - 'neutron-security-group-type.yaml'
+    - 'neutron-subnet-type.yaml'
 
 
 blueprint:
     name: 'neutron-port-test'
     topology:
 
-        -
-            name: 'neutron_port'
-            type: 'neutron_port'
-            properties:
-                port:
-                    name: 'neutron_test_port'
-            relationships:
-                -
-                    type: 'cloudify.relationships.contained_in'
-                    target: 'neutron_network'
         -
             name: 'neutron_network'
             type: 'neutron_network'
@@ -45,3 +36,19 @@ blueprint:
                     name: 'neutron_subnet_test'
                     ip_version: 4
                     cidr: '10.10.10.0/24'
+        -
+            name: 'neutron_port'
+            type: 'neutron_port'
+            properties:
+                port:
+                    name: 'neutron_test_port'
+            relationships:
+                -
+                    type: 'cloudify.relationships.contained_in'
+                    target: 'neutron_network'
+        -
+            name: 'security_group'
+            type: 'neutron_security_group'
+            properties:
+                security_group:
+                    name: 'neutron_test_security_group'

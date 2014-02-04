@@ -7,7 +7,8 @@ from cosmo_plugin_openstack_common import with_neutron_client
 @with_neutron_client
 def create(ctx, neutron_client, **kwargs):
     network = {
-        'admin_state_up': True
+        'admin_state_up': True,
+        'name': ctx.node_id,
     }
     network.update(ctx.properties['network'])
 

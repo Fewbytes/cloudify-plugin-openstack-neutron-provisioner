@@ -7,7 +7,8 @@ from cosmo_plugin_openstack_common import with_neutron_client
 @with_neutron_client
 def create(ctx, neutron_client, **kwargs):
     subnet = {
-        'network_id': ctx.capabilities['external_id']
+        'name': ctx.node_id,
+        'network_id': ctx.capabilities['external_id'],
     }
     subnet.update(ctx.properties['subnet'])
 
