@@ -7,7 +7,9 @@ types:
         derived_from: cloudify.types.base
         properties:
             - security_group
+            - rules: []
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.security_group.create
+                - delete: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.security_group.delete
 

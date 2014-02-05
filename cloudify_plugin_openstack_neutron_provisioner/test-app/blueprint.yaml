@@ -9,46 +9,92 @@ imports:
     - 'cloudify.types'
     - 'neutron-network-type.yaml'
     - 'neutron-port-type.yaml'
+    - 'neutron-router-type.yaml'
     - 'neutron-security-group-type.yaml'
     - 'neutron-subnet-type.yaml'
 
 
 blueprint:
-    name: 'neutron-port-test'
+    name: 'neutron-test-everything'
     topology:
 
-        -
-            name: 'neutron_network'
-            type: 'neutron_network'
-            properties:
-                network:
-                    name: 'neutron_network_test'
+        # -
+        #     name: 'neutron_network'
+        #     type: 'neutron_network'
+        #     properties:
+        #         network:
+        #             name: 'neutron_network_test'
+
+        # -
+        #     name: 'neutron_subnet'
+        #     type: 'neutron_subnet'
+        #     relationships:
+        #         -
+        #             type: 'cloudify.relationships.contained_in'
+        #             target: 'neutron_network'
+        #         -
+        #             type: 'cloudify.relationships.connected_to'
+        #             target: 'neutron_router'
+        #             target_interfaces:
+        #                 cloudify.interfaces.relationship_lifecycle:
+        #                     - establish: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.router.connect_subnet
+        #     properties:
+        #         subnet:
+        #             name: 'neutron_subnet_test'
+        #             ip_version: 4
+        #             cidr: '10.10.10.0/24'
+        # -
+        #     name: 'neutron_router'
+        #     type: 'neutron_router'
+        #     properties:
+        #         router:
+        #             name: 'neutron_router_test'
+        #             external_gateway_info:
+        #                 network_name: public
+
+        # -
+        #     name: 'neutron_port'
+        #     type: 'neutron_port'
+        #     properties:
+        #         port:
+        #             name: 'neutron_test_port'
+        #     relationships:
+        #         -
+        #             type: 'cloudify.relationships.contained_in'
+        #             target: 'neutron_network'
 
         -
-            name: 'neutron_subnet'
-            type: 'neutron_subnet'
-            relationships:
-                -
-                    type: 'cloudify.relationships.contained_in'
-                    target: 'neutron_network'
+            name: 'security_group_src'
+            type: 'neutron_security_group'
             properties:
-                subnet:
-                    name: 'neutron_subnet_test'
-                    ip_version: 4
-                    cidr: '10.10.10.0/24'
+                security_group:
+                    name: 'neutron_test_security_group_src'
         -
-            name: 'neutron_port'
-            type: 'neutron_port'
-            properties:
-                port:
-                    name: 'neutron_test_port'
-            relationships:
-                -
-                    type: 'cloudify.relationships.contained_in'
-                    target: 'neutron_network'
-        -
-            name: 'security_group'
+            name: 'security_group_dst'
             type: 'neutron_security_group'
             properties:
                 security_group:
                     name: 'neutron_test_security_group'
+                rules:
+                    -
+                        remote_ip_prefix: 1.2.3.0/24
+                    -
+                        port: 80
+                    -
+                        remote_ip_prefix: 2.3.4.0/24
+                        port_range_min: 65500
+                        port_range_max: 65510
+                    -
+                        remote_group_name: sg1
+                        port: 65520
+                    -
+                        remote_group_node: security_group_src  # MUST MATCH
+                        port: 65521
+                    -
+                        direction: egress
+                        remote_ip_prefix: 3.4.5.0/24
+                        port: 443
+            relationships:
+                -
+                    type: 'cloudify.relationships.connected_to'
+                    target: 'security_group_src'  # MUST MATCH

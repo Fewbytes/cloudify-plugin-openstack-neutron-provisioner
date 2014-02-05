@@ -5,8 +5,12 @@ import unittest
 
 import cosmo_plugin_openstack_common as os_common
 
-import cloudify_plugin_openstack_neutron_provisioner.port as cfy_port
 import cloudify_plugin_openstack_neutron_provisioner.network as cfy_net
+import cloudify_plugin_openstack_neutron_provisioner.port as cfy_port
+import cloudify_plugin_openstack_neutron_provisioner.router as cfy_rtr
+import cloudify_plugin_openstack_neutron_provisioner.security_group as cfy_sg
+import cloudify_plugin_openstack_neutron_provisioner.security_group_rule as cfy_sg_rule
+import cloudify_plugin_openstack_neutron_provisioner.subnet as cfy_sub
 
 class OpenstackNeutronTest(os_common.TestCase):
 
