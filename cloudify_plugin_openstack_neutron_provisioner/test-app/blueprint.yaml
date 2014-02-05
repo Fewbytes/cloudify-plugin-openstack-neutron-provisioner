@@ -74,7 +74,7 @@ blueprint:
             type: 'neutron_security_group'
             properties:
                 security_group:
-                    name: 'neutron_test_security_group'
+                    name: 'neutron_test_security_group_dst'
                 rules:
                     -
                         remote_ip_prefix: 1.2.3.0/24
