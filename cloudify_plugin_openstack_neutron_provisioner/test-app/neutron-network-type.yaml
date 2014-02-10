@@ -7,6 +7,7 @@ types:
         derived_from: cloudify.types.network
         properties:
             - network
+            - neutron_config: {}
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.network.create

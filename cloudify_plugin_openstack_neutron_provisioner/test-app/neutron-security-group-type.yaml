@@ -7,6 +7,7 @@ types:
         derived_from: cloudify.types.base  # Maybe use more specific type?
         properties:
             - security_group
+            - neutron_config: {}
             - rules: []
         interfaces:
             cloudify.interfaces.lifecycle:

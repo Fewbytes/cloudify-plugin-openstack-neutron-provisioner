@@ -1,0 +1,9 @@
+# vim: ts=4 sw=4 et
+imports:
+    - 'cloudify.types'
+
+types:
+    neutron_super:
+        derived_from: cloudify.types.base
+        properties:
+            - neutron_config: {}
