@@ -10,4 +10,4 @@ types:
             - neutron_config: {}
         interfaces:
             cloudify.interfaces.lifecycle:
-                - create: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.network.create
+                - create: cloudify_plugin_openstack_neutron_provisioner.network.create

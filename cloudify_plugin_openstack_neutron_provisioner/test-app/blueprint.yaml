@@ -1,30 +1,52 @@
 # vim: ts=4 sw=4 et
 plugins:
-    cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner:
-        derived_from: 'cloudify.plugins.remote_plugin'
+    cloudify_plugin_openstack_neutron_provisioner:
+        derived_from: 'remote_plugin'
         properties:
             url: 'https://github.com/Fewbytes/cosmo-plugin-openstack-neutron-provisioner/archive/master.zip'
+    cloudify_plugin_openstack_nova_provisioner:
+        derived_from: 'remote_plugin'
+        properties:
+            url: 'NONE_YET'
 
 imports:
     - 'cloudify.types'
+    - 'neutron-floatingip-type.yaml'
     - 'neutron-network-type.yaml'
     - 'neutron-port-type.yaml'
     - 'neutron-router-type.yaml'
     - 'neutron-security-group-type.yaml'
     - 'neutron-subnet-type.yaml'
+    - 'nova-server-type.yaml'
 
 
 blueprint:
     name: 'neutron-test-everything'
     topology:
-
-        # -
-        #     name: 'neutron_network'
-        #     type: 'neutron_network'
-        #     properties:
-        #         network:
-        #             name: 'neutron_network_test'
-
+        -
+            name: 'nova_server'
+            type: 'nova_server'
+            relationships:
+                -
+                    type: 'cloudify.relationships.connected_to'
+                    target: 'neutron_port'
+            properties:
+                server:
+                    name: 'nova_server_test'
+                    flavor: 1
+                    # 'image_name' is a sugar to passing UUID in 'image' parameter
+                    image_name: cirros-0.3.1-x86_64-uec
+                    key_name: test
+                management_network_name: public
+                # XXX. More connections and we're screwed.
+                # Have search for "connected_to" and target node
+                # of type "network"
+        -
+            name: 'neutron_network'
+            type: 'neutron_network'
+            properties:
+                network:
+                    name: 'neutron_network_test'
         # -
         #     name: 'neutron_subnet'
         #     type: 'neutron_subnet'
@@ -37,7 +59,7 @@ blueprint:
         #             target: 'neutron_router'
         #             target_interfaces:
         #                 cloudify.interfaces.relationship_lifecycle:
-        #                     - establish: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.router.connect_subnet
+        #                     - establish: cloudify_plugin_openstack_neutron_provisioner.router.connect_subnet
         #     properties:
         #         subnet:
         #             name: 'neutron_subnet_test'
@@ -52,16 +74,16 @@ blueprint:
         #             external_gateway_info:
         #                 network_name: public
 
-        # -
-        #     name: 'neutron_port'
-        #     type: 'neutron_port'
-        #     properties:
-        #         port:
-        #             name: 'neutron_test_port'
-        #     relationships:
-        #         -
-        #             type: 'cloudify.relationships.contained_in'
-        #             target: 'neutron_network'
+        -
+            name: 'neutron_port'
+            type: 'neutron_port'
+            properties:
+                port:
+                    name: 'neutron_test_port'
+            relationships:
+                -
+                    type: 'cloudify.relationships.contained_in'
+                    target: 'neutron_network'
 
         -
             name: 'security_group_src'
@@ -70,31 +92,44 @@ blueprint:
                 security_group:
                     name: 'neutron_test_security_group_src'
         -
-            name: 'security_group_dst'
+            name: 'security_group_src2'
             type: 'neutron_security_group'
             properties:
                 security_group:
-                    name: 'neutron_test_security_group_dst'
-                rules:
-                    -
-                        remote_ip_prefix: 1.2.3.0/24
-                    -
-                        port: 80
-                    -
-                        remote_ip_prefix: 2.3.4.0/24
-                        port_range_min: 65500
-                        port_range_max: 65510
-                    -
-                        remote_group_name: sg1
-                        port: 65520
-                    -
-                        remote_group_node: security_group_src  # MUST MATCH
-                        port: 65521
-                    -
-                        direction: egress
-                        remote_ip_prefix: 3.4.5.0/24
-                        port: 443
-            relationships:
-                -
-                    type: 'cloudify.relationships.connected_to'
-                    target: 'security_group_src'  # MUST MATCH
+                    name: 'neutron_test_security_group_src2'
+        # -
+        #     name: 'security_group_dst'
+        #     type: 'neutron_security_group'
+        #     properties:
+        #         security_group:
+        #             name: 'neutron_test_security_group_dst'
+        #         rules:
+        #             -
+        #                 remote_ip_prefix: 1.2.3.0/24
+        #             -
+        #                 port: 80
+        #             -
+        #                 remote_ip_prefix: 2.3.4.0/24
+        #                 port_range_min: 65500
+        #                 port_range_max: 65510
+        #             -
+        #                 remote_group_name: sg1
+        #                 port: 65520
+        #             -
+        #                 remote_group_node: security_group_src  # MUST MATCH
+        #                 port: 65521
+        #             -
+        #                 direction: egress
+        #                 remote_ip_prefix: 3.4.5.0/24
+        #                 port: 443
+        #     relationships:
+        #         -
+        #             type: 'cloudify.relationships.connected_to'
+        #             target: 'security_group_src'  # MUST MATCH
+
+        # -
+        #     name: 'floatingip'
+        #     type: 'neutron_floatingip'
+        #     properties:
+        #         floatingip:
+        #             floating_network_name: public

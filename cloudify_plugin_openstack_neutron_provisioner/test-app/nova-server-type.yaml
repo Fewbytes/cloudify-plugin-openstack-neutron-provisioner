@@ -12,6 +12,6 @@ types:
             - neutron_config: {}
         interfaces:
             cloudify.interfaces.lifecycle:
-                - create: cloudify.plugins.cloudify_plugin_openstack_nova_provisioner.server.create
-                - start: cloudify.plugins.cloudify_plugin_openstack_nova_provisioner.server.start
+                - create: cloudify_plugin_openstack_nova_provisioner.server.create
+                - start: cloudify_plugin_openstack_nova_provisioner.server.start
 

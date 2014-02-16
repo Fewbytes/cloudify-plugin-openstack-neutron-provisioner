@@ -10,6 +10,6 @@ types:
             - neutron_config: {}
         interfaces:
              cloudify.interfaces.lifecycle:
-                  - create: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.floatingip.create
-                  - delete: cloudify.plugins.cloudify_plugin_openstack_neutron_provisioner.floatingip.delete
+                  - create: cloudify_plugin_openstack_neutron_provisioner.floatingip.create
+                  - delete: cloudify_plugin_openstack_neutron_provisioner.floatingip.delete
 
