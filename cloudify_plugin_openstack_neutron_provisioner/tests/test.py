@@ -3,40 +3,40 @@
 
 import unittest
 
+from cloudify.context import ContextCapabilities
+from cloudify.mocks import MockCloudifyContext
+
 import cosmo_plugin_openstack_common as os_common
 
 import cloudify_plugin_openstack_neutron_provisioner.network as cfy_net
 import cloudify_plugin_openstack_neutron_provisioner.port as cfy_port
 import cloudify_plugin_openstack_neutron_provisioner.router as cfy_rtr
 import cloudify_plugin_openstack_neutron_provisioner.security_group as cfy_sg
-import cloudify_plugin_openstack_neutron_provisioner.security_group_rule as cfy_sg_rule
 import cloudify_plugin_openstack_neutron_provisioner.subnet as cfy_sub
 
 class OpenstackNeutronTest(os_common.TestCase):
 
-    @unittest.skip("have to update the test code")
     def test_port(self):
         name = self.name_prefix + 'the_port'
         network = self.create_network('for_port')
         subnet = self.create_subnet('for_port', '10.11.12.0/24', network=network)
 
-        self.assertThereIsNo('port', name=name)
-
-        __cloudify_id = '__cloudify_id_' + name + '_port'
-        __target_cloudify_id = '__cloudify_id_' + name + '_net'
-        network_node_state = self.nodes_data[__target_cloudify_id] 
-        network_node_state['external_id'] = network['id']
-
-        cfy_port.create_in_network(
-            __source_properties = {'port': {'name': name}},
-            __target_cloudify_id = __target_cloudify_id
+        ctx = MockCloudifyContext(
+            node_id = '__cloudify_id_' + name + '_port',
+            properties = {'port': {'name': name}},
+            capabilities = ContextCapabilities({
+                'net_node': {
+                    'external_id': network['id']
+                }
+            })
         )
+
+        cfy_port.create(ctx)
         self.assertThereIsOne('port', name=name)
 
-        cfy_port.delete(port={'name': name})
+        cfy_port.delete(ctx)
         self.assertThereIsNo('port', name=name)
 
-    @unittest.skip("have to update the test code")
     def test_network(self):
         name = self.name_prefix + 'net'
 
@@ -48,20 +48,26 @@ class OpenstackNeutronTest(os_common.TestCase):
                 'network': {'name': name}
             }
         }
-        cfy_net.create(__cloudify_context=mock_ctx)
+
+        ctx = MockCloudifyContext(
+            node_id = '__cloudify_id_' + name,
+            properties = {'network': {'name': name}},
+        )
+
+        cfy_net.create(ctx)
 
         net = self.assertThereIsOneAndGet('network', name=name)
         self.assertTrue(net['admin_state_up'])
 
-        cfy_net.stop(network)
+        cfy_net.stop(ctx)
         net = self.assertThereIsOneAndGet('network', name=name)
         self.assertFalse(net['admin_state_up'])
 
-        cfy_net.start(network)
+        cfy_net.start(ctx)
         net = self.assertThereIsOneAndGet('network', name=name)
         self.assertTrue(net['admin_state_up'])
 
-        cfy_net.delete(network={'name': name})
+        cfy_net.delete(ctx)
         self.assertThereIsNo('network', name=name)
 
 if __name__ == '__main__':
