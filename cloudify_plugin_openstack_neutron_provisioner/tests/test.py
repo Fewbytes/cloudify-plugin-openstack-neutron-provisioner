@@ -160,8 +160,7 @@ class OpenstackNeutronTest(os_common.TestCase):
         name = self.name_prefix + 'fip'
 
         floatingip = {
-            'floating_network_id': neutron_client.cosmo_get_named(
-                'network', 'public')['id']
+            'floating_network_id': neutron_client.cosmo_find_external_net()['id']
         }
         fip = neutron_client.create_floatingip({
             'floatingip': floatingip
@@ -198,7 +197,7 @@ class OpenstackNeutronTest(os_common.TestCase):
             node_id='__cloudify_id_' + name,
             properties={
                 'floatingip': {
-                    'floating_network_name': 'public'
+                    'floating_network_name': neutron_client.cosmo_find_external_net()['name']
                 }
             }
         )
@@ -208,6 +207,106 @@ class OpenstackNeutronTest(os_common.TestCase):
         cfy_fip.delete(ctx)
         ls = list(neutron_client.cosmo_list('floatingip'))
         self.assertEqual(len(ls), 0)
+
+    def test_router_create_and_delete(self):
+        neutron_client = self.get_neutron_client()
+        name = self.name_prefix + 'rtr_prov_term'
+        ctx = MockCloudifyContext(
+            node_id='__cloudify_id_' + name,
+            properties={
+                'router': {
+                    'name': name
+                }
+            }
+        )
+
+        self.assertThereIsNo('router', name=name)
+        cfy_rtr.create(ctx)
+        router = self.assertThereIsOneAndGet('router', name=name)
+        self.assertIsNone(router['external_gateway_info'])  # must not have gateway
+
+        cfy_rtr.delete(ctx)
+        self.assertThereIsNo('router', name=name)
+
+    def _test_router_with_gateway(self, enable_snat):
+        neutron_client = self.get_neutron_client()
+        ext_net = neutron_client.cosmo_find_external_net()
+
+        name = self.name_prefix + 'rtr_ext_gw_snat_'
+        name += ['dis', 'ena'][enable_snat]
+        ctx = MockCloudifyContext(
+            node_id='__cloudify_id_' + name,
+            properties={
+                'router': {
+                    'name': name,
+                    'external_gateway_info': {
+                        'network_name': ext_net['name'],
+                        'enable_snat': enable_snat
+                    }
+                }
+            }
+        )
+
+        cfy_rtr.create(ctx)
+        rtr = self.assertThereIsOneAndGet('router', name=name)
+        self.assertIsNotNone(rtr['external_gateway_info'])
+        self.assertEquals(rtr['external_gateway_info']['network_id'], ext_net['id'])
+        self.assertEquals(rtr['external_gateway_info']['enable_snat'], enable_snat)
+
+    def test_router_with_gateway_snat_enabled(self):
+        self._test_router_with_gateway(True)
+
+    def test_router_with_gateway_snat_disabled(self):
+        self._test_router_with_gateway(False)
+
+
+    def test_router_connect_disconnect_subnet(self):
+        neutron_client = self.get_neutron_client()
+
+        # Router
+        name = self.name_prefix + 'rtr_subn'
+        ctx = MockCloudifyContext(
+            node_id='__cloudify_id_' + name,
+            properties={
+                'router': {
+                    'name': name
+                }
+            }
+        )
+
+        cfy_rtr.create(ctx)
+        rtr = self.assertThereIsOneAndGet('router', name=name)
+
+        network = self.create_network('for_port')
+        subnet = self.create_subnet('for_port', '192.168.1.0/24', network=network)
+
+        # Connect router and subnet
+        ctx = MockCloudifyContext(
+            node_id=ctx.node_id,
+            runtime_properties=ctx.runtime_properties,
+            properties=ctx.properties,
+            related=MockCloudifyContext(
+                runtime_properties={'external_id': subnet['id']}
+            )
+        )
+        self.assertThereIsNo(
+            'port',
+            network_id=network['id'],
+            device_id=ctx.runtime_properties['external_id']
+        )
+        cfy_rtr.connect_subnet(ctx)
+        self.assertThereIsOne(
+            'port',
+            network_id=network['id'],
+            device_id=ctx.runtime_properties['external_id']
+        )
+
+        cfy_rtr.disconnect_subnet(ctx)
+        self.assertThereIsNo(
+            'port',
+            network_id=network['id'],
+            device_id=ctx.runtime_properties['external_id']
+        )
 
 
 if __name__ == '__main__':
