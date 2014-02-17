@@ -9,6 +9,7 @@ types:
             - security_group
             - neutron_config: {}
             - rules: []
+            - disable_egress: false
         interfaces:
             cloudify.interfaces.lifecycle:
                 - create: cloudify_plugin_openstack_neutron_provisioner.security_group.create

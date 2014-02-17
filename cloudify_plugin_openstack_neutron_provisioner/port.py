@@ -39,6 +39,9 @@ def delete(ctx, neutron_client, **kwargs):
 def connect_security_group(ctx, neutron_client, **kwargs):
     # WARNING: non-atomic operation
     port = neutron_client.cosmo_get('port', id=ctx.runtime_properties['external_id'])
-    ctx.logger.info("connect_security_group(): related={0}".format(ctx.related.runtime_properties))
+    ctx.logger.info(
+        "connect_security_group(): id={0} related={1}".format(
+            ctx.runtime_properties['external_id'],
+            ctx.related.runtime_properties))
     sgs = port['security_groups'] + [ctx.related.runtime_properties['external_id']]
-    neutron.update_port(port_id, {'port': {'security_groups': sgs}})
+    neutron_client.update_port(ctx.runtime_properties['external_id'], {'port': {'security_groups': sgs}})

@@ -8,23 +8,26 @@ from cloudify.mocks import MockCloudifyContext
 
 import cosmo_plugin_openstack_common as os_common
 
+import cloudify_plugin_openstack_neutron_provisioner.floatingip as cfy_fip
 import cloudify_plugin_openstack_neutron_provisioner.network as cfy_net
 import cloudify_plugin_openstack_neutron_provisioner.port as cfy_port
 import cloudify_plugin_openstack_neutron_provisioner.router as cfy_rtr
 import cloudify_plugin_openstack_neutron_provisioner.security_group as cfy_sg
 import cloudify_plugin_openstack_neutron_provisioner.subnet as cfy_sub
 
+
 class OpenstackNeutronTest(os_common.TestCase):
 
     def test_port(self):
         name = self.name_prefix + 'the_port'
         network = self.create_network('for_port')
-        subnet = self.create_subnet('for_port', '10.11.12.0/24', network=network)
+        self.create_subnet('for_port', '10.11.12.0/24', network=network)
+        sg = self.create_sg('for_port')
 
         ctx = MockCloudifyContext(
-            node_id = '__cloudify_id_' + name + '_port',
-            properties = {'port': {'name': name}},
-            capabilities = ContextCapabilities({
+            node_id='__cloudify_id_' + name + '_port',
+            properties={'port': {'name': name}},
+            capabilities=ContextCapabilities({
                 'net_node': {
                     'external_id': network['id']
                 }
@@ -34,6 +37,16 @@ class OpenstackNeutronTest(os_common.TestCase):
         cfy_port.create(ctx)
         self.assertThereIsOne('port', name=name)
 
+        ctx_conn = MockCloudifyContext(
+            runtime_properties=ctx.runtime_properties,
+            related=MockCloudifyContext(
+                runtime_properties={'external_id': sg['id']}
+            )
+        )
+        cfy_port.connect_security_group(ctx_conn)
+        port = self.assertThereIsOneAndGet('port', name=name)
+        self.assertTrue(sg['id'] in port['security_groups'])
+
         cfy_port.delete(ctx)
         self.assertThereIsNo('port', name=name)
 
@@ -42,16 +55,9 @@ class OpenstackNeutronTest(os_common.TestCase):
 
         self.assertThereIsNo('network', name=name)
 
-        mock_ctx = {
-            'node_id': '__cloudify_id_' + name,
-            'node_properties': {
-                'network': {'name': name}
-            }
-        }
-
         ctx = MockCloudifyContext(
-            node_id = '__cloudify_id_' + name,
-            properties = {'network': {'name': name}},
+            node_id='__cloudify_id_' + name,
+            properties={'network': {'name': name}},
         )
 
         cfy_net.create(ctx)
@@ -69,6 +75,140 @@ class OpenstackNeutronTest(os_common.TestCase):
 
         cfy_net.delete(ctx)
         self.assertThereIsNo('network', name=name)
+
+    def test_sg(self):
+        neutron_client = self.get_neutron_client()
+
+        # Test: group with all defaults + delete
+        name = self.name_prefix + 'sg1'
+        ctx = MockCloudifyContext(
+            node_id='__cloudify_id_' + name,
+            properties={
+                'security_group': {
+                    'name': name,
+                    'description': 'SG-DESC',
+                },
+                'rules': []
+            }
+        )
+        self.assertThereIsNo('security_group', name=name)
+        cfy_sg.create(ctx)
+        self.assertThereIsOne('security_group', name=name)
+
+        # By default SG should have 2 egress rules and no ingress rules
+        for direction, count in ('egress', 2), ('ingress', 0):
+            rules = neutron_client.cosmo_list(
+                'security_group_rule',
+                security_group_id=ctx.runtime_properties['external_id'],
+                direction=direction
+            )
+            ls = list(rules)
+            # print(ls)
+            self.assertEquals(len(ls), count)
+
+        cfy_sg.delete(ctx)
+        self.assertThereIsNo('security_group', name=name)
+
+        # Test: Disabled egress
+        name = self.name_prefix + 'sg2'
+        ctx2 = MockCloudifyContext(
+            node_id='__cloudify_id_' + name,
+            properties={
+                'security_group': {
+                    'name': name,
+                    'description': 'SG-DESC',
+                },
+                'rules': [],
+                'disable_egress': True,
+            }
+        )
+        self.assertThereIsNo('security_group', name=name)
+        cfy_sg.create(ctx2)
+        self.assertThereIsOne('security_group', name=name)
+        rules = neutron_client.cosmo_list(
+            'security_group_rule',
+            security_group_id=ctx2.runtime_properties['external_id'],
+        )
+        ls = list(rules)
+        self.assertEquals(len(ls), 0)
+        cfy_sg.delete(ctx2)
+
+        # Test: Exception when providing egress rule and "disable_egress"
+        ctx2.properties['rules'] = [{
+            'direction': 'egress',
+            'port': 80,
+        }]
+        self.assertThereIsNo('security_group', name=name)
+        self.assertRaises(RuntimeError, cfy_sg.create, ctx2)
+
+        # Test: One egress rule
+        del ctx2.properties['disable_egress']
+        cfy_sg.create(ctx2)
+        self.assertThereIsOne('security_group', name=name)
+        rules = neutron_client.cosmo_list(
+            'security_group_rule',
+            security_group_id=ctx2.runtime_properties['external_id'],
+            direction='egress',
+        )
+        ls = list(rules)
+        self.assertEquals(len(ls), 1)
+
+        # TODO: Test two related security groups
+
+    def test_existing_floatingip(self):
+        neutron_client = self.get_neutron_client()
+        name = self.name_prefix + 'fip'
+
+        floatingip = {
+            'floating_network_id': neutron_client.cosmo_get_named(
+                'network', 'public')['id']
+        }
+        fip = neutron_client.create_floatingip({
+            'floatingip': floatingip
+        })['floatingip']
+        ctx = MockCloudifyContext(
+            node_id='__cloudify_id_' + name,
+            properties={
+                'floatingip': {
+                    'ip': fip['floating_ip_address']
+                }
+            }
+        )
+        cfy_fip.create(ctx)
+        # Make sure "allocated" id is the id of the floating ip we
+        # allocated before the operation
+        self.assertEqual(ctx.runtime_properties['external_id'], fip['id'])
+        self.assertFalse(ctx.runtime_properties['enable_deletion'])
+        cfy_fip.delete(ctx)
+        ls = list(neutron_client.cosmo_list('floatingip', floating_ip_address=fip['floating_ip_address']))
+        self.assertEqual(len(ls), 1)
+
+    def test_new_floatingip(self):
+        neutron_client = self.get_neutron_client()
+        name = self.name_prefix + 'fip'
+
+        floatingip = {
+            'floating_network_id': neutron_client.cosmo_get_named(
+                'network', 'public')['id']
+        }
+
+        existing_fips = [fip['id'] for fip in neutron_client.cosmo_list('floatingip')]
+
+        ctx = MockCloudifyContext(
+            node_id='__cloudify_id_' + name,
+            properties={
+                'floatingip': {
+                    'floating_network_name': 'public'
+                }
+            }
+        )
+        cfy_fip.create(ctx)
+        self.assertNotIn(ctx.runtime_properties['external_id'], existing_fips)
+        self.assertTrue(ctx.runtime_properties['enable_deletion'])
+        cfy_fip.delete(ctx)
+        ls = list(neutron_client.cosmo_list('floatingip'))
+        self.assertEqual(len(ls), 0)
+
 
 if __name__ == '__main__':
     unittest.main()

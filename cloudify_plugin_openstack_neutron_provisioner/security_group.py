@@ -51,7 +51,6 @@ def create(ctx, neutron_client, **kwargs):
     }
 
     security_group.update(ctx.properties['security_group'])
-    sg = neutron_client.create_security_group({'security_group': security_group})['security_group']
 
     rules_to_apply = ctx.properties['rules']
     egress_rules_to_apply = _egress_rules(rules_to_apply)
@@ -59,8 +58,13 @@ def create(ctx, neutron_client, **kwargs):
     if 'disable_egress' in ctx.properties:
         if egress_rules_to_apply and ctx.properties['disable_egress']:
             raise RuntimeError("Security group {0} can not have both disable_egress and an egress rule".format(security_group['name']))
+        do_disable_egress = True
+    else:
+        do_disable_egress = False
 
-    if egress_rules_to_apply or security_group.get('disable_egress'):
+    sg = neutron_client.create_security_group({'security_group': security_group})['security_group']
+
+    if egress_rules_to_apply or do_disable_egress:
         for er in _egress_rules(_rules_for_sg_id(neutron_client, sg['id'])):
             neutron_client.delete_security_group_rule(er['id'])
 
@@ -104,3 +108,4 @@ def create(ctx, neutron_client, **kwargs):
 @with_neutron_client
 def delete(ctx, neutron_client, **kwargs):
     neutron_client.delete_security_group(ctx.runtime_properties['external_id'])
+    ctx.set_stopped()
