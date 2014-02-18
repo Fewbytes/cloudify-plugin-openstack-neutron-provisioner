@@ -15,9 +15,7 @@ setuptools.setup(
         "cosmo-plugin-openstack-common",
     ],
     dependency_links=[
-        "https://github.com/ilyash/cosmo-plugin-openstack-common/tarball/" \
-        "master#egg=cosmo-plugin-openstack-common-0.1"
+        "https://github.com/ilyash/cosmo-plugin-openstack-common/tarball/"
+            "master#egg=cosmo-plugin-openstack-common-0.1"
     ]
 )
-
-
