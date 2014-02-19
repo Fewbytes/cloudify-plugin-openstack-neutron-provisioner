@@ -14,4 +14,7 @@ types:
             cloudify.interfaces.lifecycle:
                 - create: cloudify_plugin_openstack_nova_provisioner.server.create
                 - start: cloudify_plugin_openstack_nova_provisioner.server.start
+                # stop() causes BadRequest exception
+                # - stop: cloudify_plugin_openstack_nova_provisioner.server.stop
+                - delete: cloudify_plugin_openstack_nova_provisioner.server.delete
 

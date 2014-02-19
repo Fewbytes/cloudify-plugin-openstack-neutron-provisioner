@@ -1,0 +1,37 @@
+# vim: ts=4 sw=4 et
+plugins:
+    cloudify_plugin_openstack_nova_provisioner:
+        derived_from: 'cloudify.plugins.manager_plugin'
+        properties:
+            url: 'https://github.com/ilyash/cloudify-plugin-openstack-nova-provisioner/archive/master.zip'
+
+imports:
+    - 'cloudify.types'
+    - 'nova-server-type.yaml'
+
+
+blueprint:
+    name: 'nova-test-timestamp-1392806589'
+    nodes:
+        -
+            # devstack # name: 'nova_server'
+            # devstack # type: 'nova_server'
+            # devstack # properties:
+            # devstack #     server:
+            # devstack #         name: 'nova_server_test'
+            # devstack #         flavor: 1
+            # devstack #         # 'image_name' is a sugar to passing UUID in 'image' parameter
+            # devstack #         image_name: cirros-0.3.1-x86_64-uec
+            # devstack #         key_name: test
+            # devstack #     management_network_name: public
+
+            name: 'nova_server'
+            type: 'nova_server'
+            properties:
+                server:
+                    name: 'nova_server_test'
+                    image_name: 'Ubuntu Precise 12.04 LTS Server 64-bit 20121026 (b)'
+                    flavor_name: 'standard.xsmall'  # 1G RAM, 10G disk (or 30G in old region), 1 CPU
+                    key_name: test
+                # HP cloud, only for new region, comment out for old region:
+                # management_network_name: cloudify-admin-network

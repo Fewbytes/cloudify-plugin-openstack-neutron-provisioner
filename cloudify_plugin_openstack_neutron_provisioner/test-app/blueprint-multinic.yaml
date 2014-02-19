@@ -21,8 +21,8 @@ imports:
 
 
 blueprint:
-    name: 'neutron-test-multinic13'
-    topology:
+    name: 'neutron-test-multinic-timestamp-1392711377'
+    nodes:
         # -
         #     name: 'nova_server'
         #     type: 'nova_server'
