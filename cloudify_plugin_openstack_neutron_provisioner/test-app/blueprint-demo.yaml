@@ -1,13 +1,13 @@
 # vim: ts=4 sw=4 et
 plugins:
+    cloudify_plugin_openstack_neutron_provisioner:
+        derived_from: 'cloudify.plugins.manager_plugin'
+        properties:
+            url: 'https://github.com/Fewbytes/cloudify-plugin-openstack-neutron-provisioner/archive/master.zip'
     cloudify_plugin_openstack_nova_provisioner:
         derived_from: 'cloudify.plugins.manager_plugin'
         properties:
             url: 'https://github.com/ilyash/cloudify-plugin-openstack-nova-provisioner/archive/master.zip'
-    cloudify_plugin_openstack_neutron_provisioner:
-        derived_from: 'cloudify.plugins.manager_plugin'
-        properties:
-            url: 'https://github.com/Fewbytes/cosmo-plugin-openstack-neutron-provisioner/archive/master.zip'
 
 imports:
     - 'cloudify.types'
@@ -21,7 +21,7 @@ imports:
 
 
 blueprint:
-    name: 'nova-test-timestamp-1392824600'
+    name: 'nova-test-timestamp-1392828443'
     nodes:
         -
             name: 'demo_nova_server'
@@ -30,10 +30,11 @@ blueprint:
                 deploy: 2
             relationships:
                 -
-                    type: 'cloudify.relationships.contained_in'
+                    # depends_on as temp fix, contained_in does not work with multiple instances
+                    type: 'cloudify.relationships.depends_on'
                     target: 'demo_neutron_network_front'
                 -
-                    type: 'cloudify.relationships.contained_in'
+                    type: 'cloudify.relationships.depends_on'
                     target: 'demo_neutron_network_back'
             properties:
                 server:
@@ -41,6 +42,28 @@ blueprint:
                     image_name: 'Ubuntu Precise 12.04 LTS Server 64-bit 20121026 (b)'
                     # Sugar: resolves name to id (->"flavor")
                     flavor_name: 'standard.xsmall'  # 1G RAM, 10G disk (or 30G in old region), 1 CPU
+                    key_name: test
+                # HP cloud, only for new region, comment out for old region:
+                management_network_name: cloudify-admin-network
+        -
+            name: 'demo_nova_server2'
+            type: 'nova_server'
+            instances:
+                deploy: 2
+            relationships:
+                -
+                    # depends_on as temp fix, contained_in does not work with multiple instances
+                    type: 'cloudify.relationships.depends_on'
+                    target: 'demo_neutron_network_front'
+                -
+                    type: 'cloudify.relationships.depends_on'
+                    target: 'demo_neutron_network_back'
+            properties:
+                server:
+                    # Sugar: resolves name to id (->"image")
+                    image_name: 'Ubuntu Precise 12.04 LTS Server 64-bit 20121026 (b)'
+                    # Sugar: resolves name to id (->"flavor")
+                    flavor_name: 'standard.small'  # 2G RAM, 2 CPUs
                     key_name: test
                 # HP cloud, only for new region, comment out for old region:
                 management_network_name: cloudify-admin-network

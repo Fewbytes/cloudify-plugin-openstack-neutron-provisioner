@@ -21,13 +21,13 @@ imports:
 
 
 blueprint:
-    name: 'nova-test-timestamp-1392811051'
+    name: 'nova-test-timestamp-1392824321'
     nodes:
         -
             name: 'demo_nova_server'
             type: 'nova_server'
             instances:
-                deploy: 2
+                deploy: 1
             properties:
                 server:
                     # Sugar: resolves name to id (->"image")
